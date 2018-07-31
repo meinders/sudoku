@@ -1,0 +1,88 @@
+body
+{
+	font-family: serif;
+	font-size: 24px;
+	padding: 0;
+	margin: 0;
+}
+
+header
+{
+	font-size: 24px;
+	background: #fc0;
+	padding: 10px;
+	font-family: sans-serif;
+}
+
+main
+{
+	padding: 5px;
+	max-width: 500px;
+	margin: auto;
+}
+
+table.sudoku
+{
+	font-size: 24px;
+	line-height: 36px;
+	border-collapse: collapse;
+	margin: 10px;
+}
+
+table.sudoku > tbody > tr:nth-of-type(3n)
+{
+	border-bottom: 2px solid black;
+}
+
+table.sudoku > tbody > tr:nth-of-type(1)
+{
+	border-top: 2px solid black;
+}
+
+table.sudoku > tbody > tr > td
+{
+	width: 36px;
+	height: 36px;
+	text-align: center;
+	border: 1px solid black;
+}
+
+table.sudoku > tbody > tr > td:nth-of-type(3n)
+{
+	border-right: 2px solid black;
+}
+
+table.sudoku > tbody > tr > td:nth-of-type(1)
+{
+	border-left: 2px solid black;
+}
+
+table.notes
+{
+	border-collapse: collapse;
+}
+
+table.notes td
+{
+	margin: 0;
+	padding: 0;
+	width: 12px;
+	height: 12px;
+	font-size: 12px;
+	line-height: 12px;
+}
+
+table.notes tr
+{
+	border: none;
+}
+
+.error
+{
+	color: red;
+}
+
+.given
+{
+	font-weight: bold;
+}
