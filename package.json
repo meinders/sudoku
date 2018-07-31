@@ -1,0 +1,12 @@
+{
+  "name": "sudoku",
+  "version": "1.0.0",
+  "description": "Sudoku solver",
+  "main": "sudoku.js",
+  "repository": "https://github.com/meinders/sudoku.git",
+  "author": "Gerrit Meinders <meinders1337@gmail.com>",
+  "license": "GPLv3",
+  "devDependencies": {
+    "eslint": "^5.2.0"
+  }
+}
