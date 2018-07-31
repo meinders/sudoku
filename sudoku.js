@@ -96,10 +96,6 @@ function main( puzzle )
 		try
 		{
 			state = step( state );
-			//logGrid(state, puzzle)
-			//experimentalStep()
-			//solveDepthFirst(state)
-			//updateSolution(solution, state)
 		}
 		catch ( e )
 		{
@@ -349,51 +345,6 @@ function step( input )
 	}
 
 	return state;
-}
-
-function experimentalStep()
-{
-	for ( let i = 0; i < 3; i++ )
-	{
-		for ( let j = 0; j < 3; j++ )
-		{
-			let a = i * 3 + j * 27;
-			let common = all();
-			for ( let k = 0; k < 9; k++ )
-			{
-				let n = a + k % 3 + (k - k % 3) * 3;
-				let s = state[n];
-				if ( s.length > 1 )
-				{
-					common = common.filter( e => s.indexOf( e ) !== -1 );
-				}
-				else if ( s.length === 1 )
-				{
-					common = removeCopy( common, s[0] );
-				}
-			}
-			if ( common.length && common.length < 9 )
-			{
-				log( 'common ', common );
-				for ( let k = 0; k < 9; k++ )
-				{
-					let n = a + k % 3 + (k - k % 3) * 3;
-					let s = state[n];
-					if ( s.length > 1 )
-					{
-						let r = s.filter( e => common.indexOf( e ) === -1 );
-						log( s, ' -> ', r );
-						if ( r.length === 1 )
-						{
-							state[n] = r;
-							break;
-							// common.push( r[0] )
-						}
-					}
-				}
-			}
-		}
-	}
 }
 
 function all()
