@@ -203,74 +203,81 @@ function solveDepthFirst( state, remaining, depth = 0, result = [] )
 	return result;
 }
 
-function solveAStar( state, remaining, limit = 1, depth = 0, result = [] )
+function solveAStar( start )
 {
-	result.nonUniqueCount = result.nonUniqueCount || 0;
+	start.string = stateToString( start );
+	start.remaining = start.length - countSolved( start );
 
-	const candidates = [];
+	const open = new Set();
+	open.add( start.string );
 
-	for ( let i = 0; i < state.length; i++ )
+	const closed = new Set();
+	const candidates = [ start ];
+	const result = [];
+
+	let i = 0;
+	while ( candidates.length && ( i++ < 10000 ) )
 	{
-		if ( state[i].length > 1 )
+		const current = candidates[ 0 ];
+		open.delete( current.string );
+		closed.add( current.string );
+
+		for ( let i = 0; i < current.length; i++ )
 		{
-			for ( let j = 0; j < state[i].length; j++ )
+			if ( current[i].length > 1 )
 			{
-				let next = state.slice();
-				let n = next[i][j];
-				next[i] = [n];
+				for ( let j = 0; j < current[i].length; j++ )
+				{
+					let next = current.slice();
+					next[i] = [next[i][j]];
+					next.string = stateToString( next );
 
-				let before = remaining - 1;
-				let after = before;
-				do
-				{
-					before = after;
-					next = step( next );
-					let invalid = isInvalid( next );
-					if ( invalid )
+					if ( !closed.has( next.string ) )
 					{
-						//log('invalid ', invalid)
-						//logGrid(next)
-						//state[i] = removeCopy(state[i], n)
-						//j--
-						next = null;
-						break;
-					}
-					else
-					{
-						after = next.length - countSolved( next );
-						//log('next = ', next)
-						//log('remaining before ', before)
-						//log('remaining after ', after)
-					}
-				}
-				while ( after && after < before );
+						let before = current.remaining - 1;
+						let after = before;
+						do
+						{
+							before = after;
+							next = step( next );
+							let invalid = isInvalid( next );
+							if ( invalid )
+							{
+								closed.add( stateToString( next ) );
+								next = null;
+								break;
+							}
+							else
+							{
+								after = next.length - countSolved( next );
+							}
+						}
+						while ( after && after < before );
 
-				if ( !after )
-				{
-					const s = stateToString( next );
-					if ( result.indexOf( s ) === -1 )
-					{
-						result.push( s );
+						if ( next )
+						{
+							next.string = stateToString( next );
+							next.remaining = after;
+							if ( !after )
+							{
+								if ( result.indexOf( next.string ) === -1 )
+								{
+									result.push( next.string );
+								}
+							}
+							else if ( !open.has( next.string ) )
+							{
+								open.add( next.string );
+								candidates.push( next );
+							}
+						}
 					}
-					result.nonUniqueCount++;
-				}
-				else if ( next && depth < 10 )
-				{
-					candidates.push( {state: next, after: after} );
 				}
 			}
 		}
+
+		candidates.sort( ( a, b ) => a.remaining < b.remaining ? -1 : a.remaining > b.remaining ? 1 : 0 );
 	}
-
-	candidates.sort( ( a, b ) => a.after < b.after ? -1 : a.after > b.after ? 1 : 0 );
-
-	candidates.forEach( candidate =>
-	{
-		if ( result.nonUniqueCount < limit )
-		{
-			solveAStar( candidate.state, candidate.after, limit, depth + 1, result );
-		}
-	} );
 
 	return result;
 }
