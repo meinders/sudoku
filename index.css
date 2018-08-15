@@ -77,12 +77,36 @@ table.notes tr
 	border: none;
 }
 
-.error
+div.tiny table.sudoku
 {
-	color: red;
+	font-size: 12px;
+	line-height: 18px;
+}
+
+div.tiny table.sudoku > tbody > tr > td
+{
+	width: 18px;
+	height: 18px;
 }
 
 .given
 {
 	font-weight: bold;
+}
+
+.error
+{
+	color: #400;
+	background: #fcc;
+}
+
+.diff
+{
+	color: #004;
+	background: #ccf;
+}
+
+.puzzle-string
+{
+	font-size: 8px;
 }

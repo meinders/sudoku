@@ -1,8 +1,15 @@
-const mainElement = document.querySelector( "body main" );
-const logElement = mainElement;
+const mainElement = document.querySelector( 'body main' );
+const statusElement = document.createElement( 'div' );
+mainElement.appendChild( statusElement );
+const logElement = document.createElement( 'div' );
+mainElement.appendChild( logElement );
 
 let puzzles = [
+	puzzleFromString('080790000690000800005008090500006080000400300000070002050000010001300700800020004'), // Weekly unsolvable (4-Aug-2018)
+	puzzleFromString('000700000690000800005008090500006080000400300100070002050000010001300700008020004'), // Weekly unsolvable (11-Aug-2018)
+
 	puzzleFromString('050000080800296000600805003190000000024000360000000015400309001000651004010000070'),
+
 	[// Quest
 		6, 0, 0, 0, 5, 0, 4, 0, 0,
 		0, 0, 0, 0, 0, 7, 0, 2, 6,
@@ -58,10 +65,8 @@ let puzzles = [
 ];
 
 let puzzle = puzzles[0];
+
 main( puzzle );
-// mainElement.appendChild( createGrid( createState( puzzle ), puzzle, index => {
-//
-// }) );
 
 function createState( puzzle )
 {
@@ -108,11 +113,7 @@ function main( puzzle )
 	{
 		{
 			log( 'Using A*...' );
-			let start = performance.now();
 			solutions = solveAStar( state, remaining, 100 );
-			state = solutions[0];
-			let end = performance.now();
-			log( Math.round( end - start ) / 1000 + ' seconds' );
 		}
 	}
 	else
@@ -120,107 +121,75 @@ function main( puzzle )
 		solutions = [state];
 	}
 
-	if ( solutions.length > 1 )
-	{
-		log( 'Showing the first of at least ' + solutions.length + ' distinct solutions' );
-		logGrid( state, puzzle );
-		log( 'Other solutions are' );
-		for ( let i = 1; i < solutions.length; i++ )
-		{
-			log( solutions[ i ] );
-		}
-	}
-	else if ( solutions.length )
-	{
-		log( 'Found exactly 1 solution' );
-		logGrid( state, puzzle );
-	}
-	else
-	{
-		log( 'Found no solution' );
-	}
-}
 
-function solveDepthFirst( state, remaining, depth = 0, result = [] )
-{
-	result.nonUniqueCount = result.nonUniqueCount || 0;
-	for ( let i = 0; i < state.length; i++ )
+	const start = performance.now();
+
+	function printNext( first )
 	{
-		if ( state[i].length > 1 )
+		const next = solutions.next();
+		let nextState = null;
+
+		if ( next.value )
 		{
-			//log('state ', i, ' = ',state [i])
-			for ( let j = 0; j < state[i].length; j++ )
+			if ( typeof next.value === 'object' )
 			{
-				let next = state.slice();
-				let n = next[i][j];
-				//log('try ', n);
-				next[i] = [n];
+				nextState = next.value;
 
-				let before = remaining - 1;
-				let after = before;
-				do
-				{
-					before = after;
-					next = step( next );
-					let invalid = isInvalid( next );
-					if ( invalid )
-					{
-						//log('invalid ', invalid)
-						//logGrid(next)
-						//state[i] = removeCopy(state[i], n)
-						//j--
-						next = null;
-						break;
-					}
-					else
-					{
-						after = next.length - countSolved( next );
-						//log('next = ', next)
-						//log('remaining before ', before)
-						//log('remaining after ', after)
-					}
-				}
-				while ( after && after < before );
+				const end = performance.now();
 
-				//log ('@', depth, ':', after?next?"I'm stuck again":"it's a dead end":"solved it")
+				const grid = createGrid( {state: next.value, puzzle: puzzle, diffWith: first} );
 
-				if ( !after )
-				{
-					const s = stateToString( next );
-					if ( result.indexOf( s ) === -1 )
-					{
-						result.push( s );
-					}
-					result.nonUniqueCount++;
-				}
-				else if ( next && depth < 10 && result.nonUniqueCount < 100 )
-				{
-					solveDepthFirst( next, after, depth + 1, result );
-				}
+				const tinyGridLabel = document.createElement( 'label' );
+				tinyGridLabel.appendChild( document.createTextNode( (Math.round( end - start ) / 1000) + ' seconds' ) );
+
+				const tinyGridWrapper = document.createElement( 'div' );
+				tinyGridWrapper.className = 'tiny';
+				tinyGridWrapper.appendChild( grid );
+				tinyGridWrapper.appendChild( tinyGridLabel );
+				logElement.appendChild( tinyGridWrapper );
+
+				logPuzzleString( stateToString( next.value ) );
+			}
+			else
+			{
+				status( String( next.value ) );
 			}
 		}
+
+		if ( next.done )
+		{
+			log( 'Done' );
+		}
+		else
+		{
+			setTimeout( () => printNext( first || nextState ), 10 );
+		}
 	}
-	return result;
+
+	printNext();
 }
 
-function solveAStar( start )
+function* solveAStar( start )
 {
 	start.string = stateToString( start );
 	start.remaining = start.length - countSolved( start );
 
-	const open = new Set();
-	open.add( start.string );
+	const openSet = new Set();
+	const closedSet = new Set();
 
-	const closed = new Set();
-	const candidates = [ start ];
-	const result = [];
+	const openQueue = [ start ];
+	openSet.add( start.string );
 
-	let i = 0;
-	while ( candidates.length && ( i++ < 10000 ) )
+	let solutionCount = 0;
+	let iterationCount = 0;
+
+	while ( openQueue.length )
 	{
-		const current = candidates[ 0 ];
-		open.delete( current.string );
-		closed.add( current.string );
+		const current = openQueue[ 0 ];
+		openQueue.splice( 0, 1 );
+		openSet.delete( current.string );
+
+		closedSet.add( current.string );
 
 		for ( let i = 0; i < current.length; i++ )
 		{
@@ -228,47 +197,61 @@ function solveAStar( start )
 			{
 				for ( let j = 0; j < current[i].length; j++ )
 				{
-					let next = current.slice();
-					next[i] = [next[i][j]];
-					next.string = stateToString( next );
+					let neighbour = current.slice();
+					neighbour[i] = [neighbour[i][j]];
+					checkCell( neighbour, i % 9, ( i - i % 9 ) / 9 );
+					if ( !neighbour[ i ].length )
+					{
+						// console.info( 'from current ', current );
+						// console.info( "state was invalid, producing neighbour ", neighbour, " by setting ", current[i][j], " at ", i );
+						throw new Error();
+					}
+					// console.info( 'neighbour = ', neighbour );
+					neighbour.string = stateToString( neighbour );
 
-					if ( !closed.has( next.string ) )
+					if ( !closedSet.has( neighbour.string ) )
 					{
 						let before = current.remaining - 1;
 						let after = before;
 						do
 						{
 							before = after;
-							next = step( next );
-							let invalid = isInvalid( next );
+							neighbour = step( neighbour );
+							neighbour.string = stateToString( neighbour );
+
+							if ( closedSet.has( neighbour.string ) )
+							{
+								neighbour = null;
+								break;
+							}
+
+							let invalid = isInvalid( neighbour );
 							if ( invalid )
 							{
-								closed.add( stateToString( next ) );
-								next = null;
+								closedSet.add( neighbour.string );
+								neighbour = null;
 								break;
 							}
 							else
 							{
-								after = next.length - countSolved( next );
+								after = neighbour.length - countSolved( neighbour );
 							}
 						}
 						while ( after && after < before );
 
-						if ( next )
+						if ( neighbour )
 						{
-							next.string = stateToString( next );
-							next.remaining = after;
+							neighbour.remaining = after;
 							if ( !after )
 							{
-								if ( result.indexOf( next.string ) === -1 )
-								{
-									result.push( next.string );
-								}
+								closedSet.add( neighbour.string );
+								solutionCount++;
+								yield neighbour;
 							}
-							else if ( !open.has( next.string ) )
+							else if ( !openSet.has( neighbour.string ) )
 							{
-								open.add( next.string );
-								candidates.push( next );
+								openSet.add( neighbour.string );
+								openQueue.push( neighbour );
 							}
 						}
 					}
@@ -276,15 +259,24 @@ function solveAStar( start )
 			}
 		}
 
-		candidates.sort( ( a, b ) => a.remaining < b.remaining ? -1 : a.remaining > b.remaining ? 1 : 0 );
-	}
+		openQueue.sort( ( a, b ) => a.remaining < b.remaining ? -1 : a.remaining > b.remaining ? 1 : 0 );
 
-	return result;
+		iterationCount++;
+		if ( iterationCount % 10 === 0 )
+		{
+			yield iterationCount + ': ' + solutionCount + ' solutions, ' + openQueue.length + (openQueue.length ? ' in queue with distance \u2265 ' + openQueue[0].remaining : '');
+		}
+		else
+		{
+			yield;
+		}
+	}
 }
 
 function step( input )
 {
 	let state = input.slice();
+
 	for ( let i = 0; i < 9; i++ )
 	{
 		let a = i - i % 3;
@@ -309,9 +301,9 @@ function step( input )
 
 					// column/row based on block
 					state[x + 9 * y].forEach( e => {
-						(x !== i) && (remove( col, e ));
-						(y !== j) && (remove( row, e ));
-						((x !== i) || (y !== j)) && (remove( cell, e ));
+						(x !== i) && (remove( col, e )); // pointing pair(s)/triple(s) (column)
+						(y !== j) && (remove( row, e )); // pointing pair(s)/triple(s) (row)
+						((x !== i) || (y !== j)) && (remove( cell, e )); // last cell in block
 					} );
 				}
 
@@ -320,10 +312,11 @@ function step( input )
 				{
 					for ( let x = 0; x < 9; x++ )
 					{
-						if ( x < a || x >= a + 3 )
+						if ( ( state[x + 9 * j].length > 1 ) && ( x < a || x >= a + 3 ) )
 						{
 							//log(' - ', state[x+9*j])
 							state[x + 9 * j] = state[x + 9 * j].filter( e => row.indexOf( e ) === -1 );
+							// checkCell( state, x, j );
 						}
 					}
 				}
@@ -333,9 +326,10 @@ function step( input )
 				{
 					for ( let y = 0; y < 9; y++ )
 					{
-						if ( y < b || y >= b + 3 )
+						if ( ( state[i + 9 * y].length > 1 ) && ( y < b || y >= b + 3 ) )
 						{
 							state[i + 9 * y] = state[i + 9 * y].filter( e => col.indexOf( e ) === -1 );
+							// checkCell( state, i, y );
 						}
 					}
 				}
@@ -344,14 +338,43 @@ function step( input )
 				if ( cell.length === 1 )
 				{
 					s = cell;
+					// checkCell( state, i, j );
 				}
 
 				state[i + 9 * j] = s;
+				// checkCell( state, i, j );
 			}
 		}
 	}
 
+	checkState( state );
 	return state;
+}
+
+function checkCell( state, i, j )
+{
+	let a = i - i % 3;
+	let b = j - j % 3;
+
+	let s = state[(i + 9 * j)].slice();
+
+	for ( let k = 0; k < 9; k++ )
+	{
+		let x = a + k % 3;
+		let y = b + (k - k % 3) / 3;
+
+		// basic rules
+		(k !== i) && remove( s, only( state[k + 9 * j] ) );
+		(k !== j) && remove( s, only( state[i + 9 * k] ) );
+		((x !== i) || (y !== j)) && remove( s, only( state[x + 9 * y] ) );
+	}
+
+	state[(i + 9 * j)] = s;
+}
+
+function checkState( state )
+{
+	state.forEach( ( e, i ) => checkCell( state, i % 9, ( i - i % 9 ) / 9 ) );
 }
 
 function all()
@@ -421,6 +444,11 @@ function puzzleFromString( s )
 	return s.split( '' ).map( e => Number.parseInt( e ) || 0 );
 }
 
+function status( text )
+{
+	statusElement.innerText = text;
+}
+
 function log()
 {
 	[...arguments].forEach( e => {
@@ -429,13 +457,23 @@ function log()
 	logElement.appendChild( document.createElement( 'br' ) );
 }
 
-function logGrid( state, puzzle )
+function logPuzzleString( s )
 {
-	logElement.appendChild( createGrid( state, puzzle ) );
+	const div = document.createElement('div');
+	div.className = 'puzzle-string';
+	div.appendChild( document.createTextNode( s ) );
+	logElement.appendChild( div );
 }
 
-function createGrid( state, puzzle, listener )
+function logGrid( state, puzzle )
 {
+	logElement.appendChild( createGrid( { state: state, puzzle: puzzle } ) );
+}
+
+function createGrid( params )
+{
+	let { state, puzzle, diffWith, listener } = params;
+
 	let table = document.createElement( 'table' );
 	table.className = 'sudoku';
 	let tbody = document.createElement( 'tbody' );
@@ -452,6 +490,10 @@ function createGrid( state, puzzle, listener )
 			{
 				if ( puzzle && (puzzle[index] === e) ) td.classList.add( 'given' );
 				if ( !e ) td.classList.add( 'error' );
+				if ( diffWith && ( only( diffWith[ index ] ) !== e ) )
+				{
+					td.classList.add( 'diff' );
+				}
 				td.appendChild( document.createTextNode( String( state[index][0] ) ) );
 			}
 			else
