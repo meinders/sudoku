@@ -1,3 +1,3 @@
 # Sudoku
 
-The popular puzzle from Japan, ~~now easily solved~~.
+The popular puzzle from Japan, now easily solved.

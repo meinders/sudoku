@@ -137,7 +137,7 @@ function main( puzzle )
 
 				const end = performance.now();
 
-				const grid = createGrid( {state: next.value, puzzle: puzzle, diffWith: first} );
+				const grid = createGrid( {state: nextState, puzzle: puzzle, diffWith: first} );
 
 				const tinyGridLabel = document.createElement( 'label' );
 				tinyGridLabel.appendChild( document.createTextNode( (Math.round( end - start ) / 1000) + ' seconds' ) );
@@ -198,15 +198,7 @@ function* solveAStar( start )
 				for ( let j = 0; j < current[i].length; j++ )
 				{
 					let neighbour = current.slice();
-					neighbour[i] = [neighbour[i][j]];
-					checkCell( neighbour, i % 9, ( i - i % 9 ) / 9 );
-					if ( !neighbour[ i ].length )
-					{
-						// console.info( 'from current ', current );
-						// console.info( "state was invalid, producing neighbour ", neighbour, " by setting ", current[i][j], " at ", i );
-						throw new Error();
-					}
-					// console.info( 'neighbour = ', neighbour );
+					neighbour[i] = [current[i][j]];
 					neighbour.string = stateToString( neighbour );
 
 					if ( !closedSet.has( neighbour.string ) )
@@ -256,6 +248,7 @@ function* solveAStar( start )
 						}
 					}
 				}
+				break;
 			}
 		}
 
