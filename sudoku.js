@@ -15,13 +15,13 @@ let puzzles = [
 	puzzleFromString( '500360104060009000000057806940000000030610009702900560000280015000090070251700083' ) // ervaren 1 multiple solutions
 ];
 
-let puzzle = puzzles[0];
+let puzzle = puzzles[ 0 ];
 
 main( puzzle );
 
 function createState( puzzle )
 {
-	return puzzle.map( n => n ? [n] : all() );
+	return puzzle.map( n => n ? [ n ] : all() );
 }
 
 function main( puzzle )
@@ -69,7 +69,7 @@ function main( puzzle )
 	}
 	else
 	{
-		solutions = [state];
+		solutions = [ state ];
 	}
 
 
@@ -88,10 +88,10 @@ function main( puzzle )
 
 				const end = performance.now();
 
-				const grid = createGrid( {state: nextState, puzzle: puzzle, diffWith: first} );
+				const grid = createGrid( { state: nextState, puzzle: puzzle, diffWith: first } );
 
 				const tinyGridLabel = document.createElement( 'label' );
-				tinyGridLabel.appendChild( document.createTextNode( (Math.round( end - start ) / 1000) + ' seconds' ) );
+				tinyGridLabel.appendChild( document.createTextNode( ( Math.round( end - start ) / 1000 ) + ' seconds' ) );
 
 				const tinyGridWrapper = document.createElement( 'div' );
 				tinyGridWrapper.className = 'tiny';
@@ -144,12 +144,12 @@ function* solveAStar( start )
 
 		for ( let i = 0; i < current.length; i++ )
 		{
-			if ( current[i].length > 1 )
+			if ( current[ i ].length > 1 )
 			{
-				for ( let j = 0; j < current[i].length; j++ )
+				for ( let j = 0; j < current[ i ].length; j++ )
 				{
 					let neighbour = current.slice();
-					neighbour[i] = [current[i][j]];
+					neighbour[ i ] = [ current[ i ][ j ] ];
 					neighbour.string = stateToString( neighbour );
 
 					if ( !closedSet.has( neighbour.string ) )
@@ -208,7 +208,7 @@ function* solveAStar( start )
 		iterationCount++;
 		if ( iterationCount % 10 === 0 )
 		{
-			yield iterationCount + ': ' + solutionCount + ' solutions, ' + openQueue.length + (openQueue.length ? ' in queue with distance \u2265 ' + openQueue[0].remaining : '');
+			yield iterationCount + ': ' + solutionCount + ' solutions, ' + openQueue.length + ( openQueue.length ? ' in queue with distance \u2265 ' + openQueue[ 0 ].remaining : '' );
 		}
 		else
 		{
@@ -226,28 +226,28 @@ function step( input )
 		let a = i - i % 3;
 		for ( let j = 0; j < 9; j++ )
 		{
-			if ( state[i + 9 * j].length > 1 )
+			if ( state[ i + 9 * j ].length > 1 )
 			{
 				let b = j - j % 3;
-				let s = state[i + 9 * j].slice();
+				let s = state[ i + 9 * j ].slice();
 				let row = s.slice();
 				let col = s.slice();
 				let cell = s.slice();
 				for ( let k = 0; k < 9; k++ )
 				{
 					let x = a + k % 3;
-					let y = b + (k - k % 3) / 3;
+					let y = b + ( k - k % 3 ) / 3;
 
 					// basic rules
-					remove( s, only( state[k + 9 * j] ) );
-					remove( s, only( state[i + 9 * k] ) );
-					remove( s, only( state[x + 9 * y] ) );
+					remove( s, only( state[ k + 9 * j ] ) );
+					remove( s, only( state[ i + 9 * k ] ) );
+					remove( s, only( state[ x + 9 * y ] ) );
 
 					// column/row based on block
-					state[x + 9 * y].forEach( e => {
-						(x !== i) && (remove( col, e )); // pointing pair(s)/triple(s) (column)
-						(y !== j) && (remove( row, e )); // pointing pair(s)/triple(s) (row)
-						((x !== i) || (y !== j)) && (remove( cell, e )); // last cell in block
+					state[ x + 9 * y ].forEach( e => {
+						( x !== i ) && ( remove( col, e ) ); // pointing pair(s)/triple(s) (column)
+						( y !== j ) && ( remove( row, e ) ); // pointing pair(s)/triple(s) (row)
+						( ( x !== i ) || ( y !== j ) ) && ( remove( cell, e ) ); // last cell in block
 					} );
 				}
 
@@ -256,10 +256,10 @@ function step( input )
 				{
 					for ( let x = 0; x < 9; x++ )
 					{
-						if ( ( state[x + 9 * j].length > 1 ) && ( x < a || x >= a + 3 ) )
+						if ( ( state[ x + 9 * j ].length > 1 ) && ( x < a || x >= a + 3 ) )
 						{
 							//log(' - ', state[x+9*j])
-							state[x + 9 * j] = state[x + 9 * j].filter( e => row.indexOf( e ) === -1 );
+							state[ x + 9 * j ] = state[ x + 9 * j ].filter( e => row.indexOf( e ) === -1 );
 							// checkCell( state, x, j );
 						}
 					}
@@ -270,9 +270,9 @@ function step( input )
 				{
 					for ( let y = 0; y < 9; y++ )
 					{
-						if ( ( state[i + 9 * y].length > 1 ) && ( y < b || y >= b + 3 ) )
+						if ( ( state[ i + 9 * y ].length > 1 ) && ( y < b || y >= b + 3 ) )
 						{
-							state[i + 9 * y] = state[i + 9 * y].filter( e => col.indexOf( e ) === -1 );
+							state[ i + 9 * y ] = state[ i + 9 * y ].filter( e => col.indexOf( e ) === -1 );
 							// checkCell( state, i, y );
 						}
 					}
@@ -285,7 +285,7 @@ function step( input )
 					// checkCell( state, i, j );
 				}
 
-				state[i + 9 * j] = s;
+				state[ i + 9 * j ] = s;
 				// checkCell( state, i, j );
 			}
 		}
@@ -300,20 +300,20 @@ function checkCell( state, i, j )
 	let a = i - i % 3;
 	let b = j - j % 3;
 
-	let s = state[(i + 9 * j)].slice();
+	let s = state[ ( i + 9 * j ) ].slice();
 
 	for ( let k = 0; k < 9; k++ )
 	{
 		let x = a + k % 3;
-		let y = b + (k - k % 3) / 3;
+		let y = b + ( k - k % 3 ) / 3;
 
 		// basic rules
-		(k !== i) && remove( s, only( state[k + 9 * j] ) );
-		(k !== j) && remove( s, only( state[i + 9 * k] ) );
-		((x !== i) || (y !== j)) && remove( s, only( state[x + 9 * y] ) );
+		( k !== i ) && remove( s, only( state[ k + 9 * j ] ) );
+		( k !== j ) && remove( s, only( state[ i + 9 * k ] ) );
+		( ( x !== i ) || ( y !== j ) ) && remove( s, only( state[ x + 9 * y ] ) );
 	}
 
-	state[(i + 9 * j)] = s;
+	state[ ( i + 9 * j ) ] = s;
 }
 
 function checkState( state )
@@ -323,7 +323,7 @@ function checkState( state )
 
 function all()
 {
-	return [1, 2, 3, 4, 5, 6, 7, 8, 9];
+	return [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ];
 }
 
 function removeCopy( s, n )
@@ -345,7 +345,7 @@ function remove( s, n )
 
 function only( s )
 {
-	return s.length === 1 ? s[0] : 0;
+	return s.length === 1 ? s[ 0 ] : 0;
 }
 
 function countSolved( state )
@@ -370,7 +370,7 @@ function toHtml( s )
 
 function stateToString( state )
 {
-	return puzzleToString( state.map( e => e.length === 1 ? e[0] : 0 ) );
+	return puzzleToString( state.map( e => e.length === 1 ? e[ 0 ] : 0 ) );
 }
 
 function puzzleToString( puzzle )
@@ -395,7 +395,7 @@ function status( text )
 
 function log()
 {
-	[...arguments].forEach( e => {
+	[ ...arguments ].forEach( e => {
 		logElement.appendChild( document.createTextNode( Array.isArray( e ) ? e.join( ',' ) : String( e ) ) );
 	} );
 	logElement.appendChild( document.createElement( 'br' ) );
@@ -403,7 +403,7 @@ function log()
 
 function logPuzzleString( s )
 {
-	const div = document.createElement('div');
+	const div = document.createElement( 'div' );
 	div.className = 'puzzle-string';
 	div.appendChild( document.createTextNode( s ) );
 	logElement.appendChild( div );
@@ -428,24 +428,24 @@ function createGrid( params )
 		{
 			let td = document.createElement( 'td' );
 			let index = 9 * i + j;
-			let e = only( state[index] );
-			let n = state[index].length;
+			let e = only( state[ index ] );
+			let n = state[ index ].length;
 			if ( n === 1 )
 			{
-				if ( puzzle && (puzzle[index] === e) ) td.classList.add( 'given' );
+				if ( puzzle && ( puzzle[ index ] === e ) ) td.classList.add( 'given' );
 				if ( !e ) td.classList.add( 'error' );
 				if ( diffWith && ( only( diffWith[ index ] ) !== e ) )
 				{
 					td.classList.add( 'diff' );
 				}
-				td.appendChild( document.createTextNode( String( state[index][0] ) ) );
+				td.appendChild( document.createTextNode( String( state[ index ][ 0 ] ) ) );
 			}
 			else
 			{
 				if ( e || !n ) td.classList.add( 'error' );
 				if ( n < 9 )
 				{
-					td.appendChild( createNotes( state[index] ) );
+					td.appendChild( createNotes( state[ index ] ) );
 				}
 			}
 			tr.appendChild( td );
