@@ -19,14 +19,9 @@ let puzzle = puzzles[ 0 ];
 
 main( puzzle );
 
-function createState( puzzle )
-{
-	return puzzle.map( n => n ? [ n ] : all() );
-}
-
 function main( puzzle )
 {
-	let state = createState( puzzle );
+	let state = puzzleToState( puzzle );
 
 	let oldRemaining = puzzle.length;
 	let remaining;
@@ -144,12 +139,13 @@ function* solveAStar( start )
 
 		for ( let i = 0; i < current.length; i++ )
 		{
-			if ( current[ i ].length > 1 )
+			if ( unsolved( current[ i ] ) )
 			{
-				for ( let j = 0; j < current[ i ].length; j++ )
+				const candidates = cellValues( current[ i ] );
+				for ( let j = 0; j < candidates.length; j++ )
 				{
 					let neighbour = current.slice();
-					neighbour[ i ] = [ current[ i ][ j ] ];
+					neighbour[ i ] = createSingle( candidates[ j ] );
 					neighbour.string = stateToString( neighbour );
 
 					if ( !closedSet.has( neighbour.string ) )
@@ -226,60 +222,67 @@ function step( input )
 		let a = i - i % 3;
 		for ( let j = 0; j < 9; j++ )
 		{
-			if ( state[ i + 9 * j ].length > 1 )
+			if ( unsolved( state[ i + 9 * j ] ) )
 			{
 				let b = j - j % 3;
-				let s = state[ i + 9 * j ].slice();
-				let row = s.slice();
-				let col = s.slice();
-				let cell = s.slice();
+				let s = copyCell( state[ i + 9 * j ] );
+				let row = copyCell( s );
+				let col = copyCell( s );
+				let cell = copyCell( s );
 				for ( let k = 0; k < 9; k++ )
 				{
 					let x = a + k % 3;
 					let y = b + ( k - k % 3 ) / 3;
 
 					// basic rules
-					remove( s, only( state[ k + 9 * j ] ) );
-					remove( s, only( state[ i + 9 * k ] ) );
-					remove( s, only( state[ x + 9 * y ] ) );
+					s = remove( s, only( state[ k + 9 * j ] ) );
+					s = remove( s, only( state[ i + 9 * k ] ) );
+					s = remove( s, only( state[ x + 9 * y ] ) );
 
 					// column/row based on block
-					state[ x + 9 * y ].forEach( e => {
-						( x !== i ) && ( remove( col, e ) ); // pointing pair(s)/triple(s) (column)
-						( y !== j ) && ( remove( row, e ) ); // pointing pair(s)/triple(s) (row)
-						( ( x !== i ) || ( y !== j ) ) && ( remove( cell, e ) ); // last cell in block
-					} );
+					if ( x !== i )
+					{
+						col = removeAll( col, state[ x + 9 * y ] ); // pointing pair(s)/triple(s) (column)
+					}
+					if ( y !== j )
+					{
+						row = removeAll( row, state[ x + 9 * y ] ); // pointing pair(s)/triple(s) (row)
+					}
+					if ( ( x !== i ) || ( y !== j ) )
+					{
+						cell = removeAll( cell, state[ x + 9 * y ] ); // last cell in block
+					}
 				}
 
 				//log(i+','+j+':row ',row)
-				if ( row.length )
+				if ( nonEmpty( row ) )
 				{
 					for ( let x = 0; x < 9; x++ )
 					{
-						if ( ( state[ x + 9 * j ].length > 1 ) && ( x < a || x >= a + 3 ) )
+						if ( unsolved( state[ x + 9 * j ] ) && ( x < a || x >= a + 3 ) )
 						{
 							//log(' - ', state[x+9*j])
-							state[ x + 9 * j ] = state[ x + 9 * j ].filter( e => row.indexOf( e ) === -1 );
+							state[ x + 9 * j ] = removeAll( copyCell( state[ x + 9 * j ] ), row );
 							// checkCell( state, x, j );
 						}
 					}
 				}
 
 				//log(i+','+j+':col ',col)
-				if ( col.length )
+				if ( nonEmpty( col ) )
 				{
 					for ( let y = 0; y < 9; y++ )
 					{
-						if ( ( state[ i + 9 * y ].length > 1 ) && ( y < b || y >= b + 3 ) )
+						if ( unsolved( state[ i + 9 * y ] ) && ( y < b || y >= b + 3 ) )
 						{
-							state[ i + 9 * y ] = state[ i + 9 * y ].filter( e => col.indexOf( e ) === -1 );
+							state[ i + 9 * y ] = removeAll( copyCell( state[ i + 9 * y ] ), col );
 							// checkCell( state, i, y );
 						}
 					}
 				}
 
 				//log(i+','+j+':cell ',cell)
-				if ( cell.length === 1 )
+				if ( single( cell ) )
 				{
 					s = cell;
 					// checkCell( state, i, j );
@@ -297,23 +300,32 @@ function step( input )
 
 function checkCell( state, i, j )
 {
-	let a = i - i % 3;
-	let b = j - j % 3;
+	const a = i - i % 3;
+	const b = j - j % 3;
 
-	let s = state[ ( i + 9 * j ) ].slice();
+	let s = copyCell( state[ i + 9 * j ] );
 
 	for ( let k = 0; k < 9; k++ )
 	{
-		let x = a + k % 3;
-		let y = b + ( k - k % 3 ) / 3;
+		const x = a + k % 3;
+		const y = b + ( k - k % 3 ) / 3;
 
 		// basic rules
-		( k !== i ) && remove( s, only( state[ k + 9 * j ] ) );
-		( k !== j ) && remove( s, only( state[ i + 9 * k ] ) );
-		( ( x !== i ) || ( y !== j ) ) && remove( s, only( state[ x + 9 * y ] ) );
+		if ( k !== i )
+		{
+			s = remove( s, only( state[ k + 9 * j ] ) );
+		}
+		if ( k !== j )
+		{
+			s = remove( s, only( state[ i + 9 * k ] ) );
+		}
+		if ( ( x !== i ) || ( y !== j ) )
+		{
+			s = remove( s, only( state[ x + 9 * y ] ) );
+		}
 	}
 
-	state[ ( i + 9 * j ) ] = s;
+	state[ i + 9 * j ] = s;
 }
 
 function checkState( state )
@@ -326,51 +338,79 @@ function all()
 	return [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ];
 }
 
-function removeCopy( s, n )
+function copyCell( cell )
 {
-	return n ? s.filter( e => e !== n ) : s;
+	return cell.slice();
 }
 
-function remove( s, n )
+function cellValues( cell )
+{
+	return cell;
+}
+
+function createSingle( value )
+{
+	return [ value ];
+}
+
+function invalidCell( cell )
+{
+	return cell.length === 0;
+}
+
+function single( cell )
+{
+	return cell.length === 1;
+}
+
+function nonEmpty( cell )
+{
+	return cell.length >= 1;
+}
+
+function unsolved( cell )
+{
+	return cell.length > 1;
+}
+
+function remove( cell, n )
 {
 	if ( n )
 	{
-		let index = s.indexOf( n );
+		let index = cell.indexOf( n );
 		if ( index !== -1 )
 		{
-			s.splice( index, 1 );
+			cell.splice( index, 1 );
 		}
 	}
+	return cell;
 }
 
-function only( s )
+// Removes all values in (pseudo)cell b from cell a.
+function removeAll( a, b )
 {
-	return s.length === 1 ? s[ 0 ] : 0;
+	b.forEach( e => remove( a, e ) );
+	return a;
+}
+
+function only( cell )
+{
+	return cell.length === 1 ? cell[ 0 ] : 0;
 }
 
 function countSolved( state )
 {
-	return state.filter( e => e.length === 1 ).length;
-}
-
-function countInvalid( state )
-{
-	return state.filter( e => e.length === 0 ).length;
+	return state.filter( single ).length;
 }
 
 function isInvalid( state )
 {
-	return state.some( e => e.length === 0 );
-}
-
-function toHtml( s )
-{
-	return '<ul><li>' + s.map( e => Array.isArray( e ) ? toHtml( e ) : e ).join( ',' ) + '</li></ul>';
+	return state.some( invalidCell );
 }
 
 function stateToString( state )
 {
-	return puzzleToString( state.map( e => e.length === 1 ? e[ 0 ] : 0 ) );
+	return puzzleToString( state.map( only ) );
 }
 
 function puzzleToString( puzzle )
@@ -378,14 +418,14 @@ function puzzleToString( puzzle )
 	return puzzle.join( '' );
 }
 
-function stateFromString( s )
-{
-	return puzzleFromString( s ).map( e => e ? [ e ] : all() );
-}
-
 function puzzleFromString( s )
 {
 	return s.split( '' ).map( e => Number.parseInt( e ) || 0 );
+}
+
+function puzzleToState( puzzle )
+{
+	return puzzle.map( n => n ? createSingle( n ) : all() );
 }
 
 function status( text )
@@ -429,7 +469,8 @@ function createGrid( params )
 			let td = document.createElement( 'td' );
 			let index = 9 * i + j;
 			let e = only( state[ index ] );
-			let n = state[ index ].length;
+			const values = cellValues( state[ index ] );
+			let n = values.length;
 			if ( n === 1 )
 			{
 				if ( puzzle && ( puzzle[ index ] === e ) ) td.classList.add( 'given' );
@@ -438,14 +479,14 @@ function createGrid( params )
 				{
 					td.classList.add( 'diff' );
 				}
-				td.appendChild( document.createTextNode( String( state[ index ][ 0 ] ) ) );
+				td.appendChild( document.createTextNode( String( values[ 0 ] ) ) );
 			}
 			else
 			{
 				if ( e || !n ) td.classList.add( 'error' );
 				if ( n < 9 )
 				{
-					td.appendChild( createNotes( state[ index ] ) );
+					td.appendChild( createNotes( values ) );
 				}
 			}
 			tr.appendChild( td );
