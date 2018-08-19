@@ -15,6 +15,22 @@ let puzzles = [
 	puzzleFromString( '500360104060009000000057806940000000030610009702900560000280015000090070251700083' ) // ervaren 1 multiple solutions
 ];
 
+const cellValuesLookup = [];
+for ( let i = 0; i < 512; i++ )
+{
+	const entry = [];
+	( ( i & 1 ) !== 0 ) && entry.push( 1 );
+	( ( i & 2 ) !== 0 ) && entry.push( 2 );
+	( ( i & 4 ) !== 0 ) && entry.push( 3 );
+	( ( i & 8 ) !== 0 ) && entry.push( 4 );
+	( ( i & 16 ) !== 0 ) && entry.push( 5 );
+	( ( i & 32 ) !== 0 ) && entry.push( 6 );
+	( ( i & 64 ) !== 0 ) && entry.push( 7 );
+	( ( i & 128 ) !== 0 ) && entry.push( 8 );
+	( ( i & 256 ) !== 0 ) && entry.push( 9 );
+	cellValuesLookup.push( entry );
+}
+
 let puzzle = puzzles[ 0 ];
 
 main( puzzle );
@@ -205,10 +221,6 @@ function* solveAStar( start )
 		if ( iterationCount % 10 === 0 )
 		{
 			yield iterationCount + ': ' + solutionCount + ' solutions, ' + openQueue.length + ( openQueue.length ? ' in queue with distance \u2265 ' + openQueue[ 0 ].remaining : '' );
-		}
-		else
-		{
-			yield;
 		}
 	}
 }
@@ -463,65 +475,96 @@ function createNotes( s )
 
 function all()
 {
-	return [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ];
+	return 511; // ( 1 << 9 ) - 1
 }
 
 function copyCell( cell )
 {
-	return cell.slice();
+	return cell;
 }
 
 function cellValues( cell )
 {
-	return cell;
+	return cellValuesLookup[ cell ];
 }
 
 function createSingle( value )
 {
-	return [ value ];
+	return 1 << ( value - 1 );
 }
 
 function invalidCell( cell )
 {
-	return cell.length === 0;
+	return cell === 0;
 }
 
 function single( cell )
 {
-	return cell.length === 1;
+	return ( ( cell !== 0 ) && ( ( cell & ( ~cell + 1 ) ) === cell ) );
 }
 
 function nonEmpty( cell )
 {
-	return cell.length >= 1;
+	return cell !== 0;
 }
 
 function unsolved( cell )
 {
-	return cell.length > 1;
+	return ( ( cell !== 0 ) && ( ( cell & ( ~cell + 1 ) ) !== cell ) );
 }
 
 function remove( cell, n )
 {
-	if ( n )
-	{
-		let index = cell.indexOf( n );
-		if ( index !== -1 )
-		{
-			cell.splice( index, 1 );
-		}
-	}
-	return cell;
+	return cell & ~createSingle( n );
 }
 
 // Removes all values in (pseudo)cell b from cell a.
 function removeAll( a, b )
 {
-	b.forEach( e => remove( a, e ) );
-	return a;
+	return a & ~b;
 }
 
 function only( cell )
 {
-	return cell.length === 1 ? cell[ 0 ] : 0;
+	return single( cell ) ? log2( cell ) + 1 : 0;
+}
+
+function log2( x )
+{
+	return 31 - clz3( x );
+}
+
+// https://en.wikipedia.org/wiki/Find_first_set#CLZ
+function clz3( x )
+{
+	if ( x === 0 )
+	{
+		return 32;
+	}
+	let n = 0;
+	if ( ( x & 0xffff0000 ) === 0 )
+	{
+		n = n + 16;
+		x = x << 16;
+	}
+	if ( ( x & 0xff000000 ) === 0 )
+	{
+		n = n + 8;
+		x = x << 8;
+	}
+	if ( ( x & 0xf0000000 ) === 0 )
+	{
+		n = n + 4;
+		x = x << 4;
+	}
+	if ( ( x & 0xc0000000 ) === 0 )
+	{
+		n = n + 2;
+		x = x << 2;
+	}
+	if ( ( x & 0x80000000 ) === 0 )
+	{
+		n = n + 1;
+	}
+	return n;
 }
