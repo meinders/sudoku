@@ -333,71 +333,6 @@ function checkState( state )
 	state.forEach( ( e, i ) => checkCell( state, i % 9, ( i - i % 9 ) / 9 ) );
 }
 
-function all()
-{
-	return [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ];
-}
-
-function copyCell( cell )
-{
-	return cell.slice();
-}
-
-function cellValues( cell )
-{
-	return cell;
-}
-
-function createSingle( value )
-{
-	return [ value ];
-}
-
-function invalidCell( cell )
-{
-	return cell.length === 0;
-}
-
-function single( cell )
-{
-	return cell.length === 1;
-}
-
-function nonEmpty( cell )
-{
-	return cell.length >= 1;
-}
-
-function unsolved( cell )
-{
-	return cell.length > 1;
-}
-
-function remove( cell, n )
-{
-	if ( n )
-	{
-		let index = cell.indexOf( n );
-		if ( index !== -1 )
-		{
-			cell.splice( index, 1 );
-		}
-	}
-	return cell;
-}
-
-// Removes all values in (pseudo)cell b from cell a.
-function removeAll( a, b )
-{
-	b.forEach( e => remove( a, e ) );
-	return a;
-}
-
-function only( cell )
-{
-	return cell.length === 1 ? cell[ 0 ] : 0;
-}
-
 function countSolved( state )
 {
 	return state.filter( single ).length;
@@ -524,4 +459,69 @@ function createNotes( s )
 	}
 	table.appendChild( tbody );
 	return table;
+}
+
+function all()
+{
+	return [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ];
+}
+
+function copyCell( cell )
+{
+	return cell.slice();
+}
+
+function cellValues( cell )
+{
+	return cell;
+}
+
+function createSingle( value )
+{
+	return [ value ];
+}
+
+function invalidCell( cell )
+{
+	return cell.length === 0;
+}
+
+function single( cell )
+{
+	return cell.length === 1;
+}
+
+function nonEmpty( cell )
+{
+	return cell.length >= 1;
+}
+
+function unsolved( cell )
+{
+	return cell.length > 1;
+}
+
+function remove( cell, n )
+{
+	if ( n )
+	{
+		let index = cell.indexOf( n );
+		if ( index !== -1 )
+		{
+			cell.splice( index, 1 );
+		}
+	}
+	return cell;
+}
+
+// Removes all values in (pseudo)cell b from cell a.
+function removeAll( a, b )
+{
+	b.forEach( e => remove( a, e ) );
+	return a;
+}
+
+function only( cell )
+{
+	return cell.length === 1 ? cell[ 0 ] : 0;
 }
