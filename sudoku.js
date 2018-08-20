@@ -1,18 +1,26 @@
 const mainElement = document.querySelector( 'body main' );
 const statusElement = document.createElement( 'div' );
+statusElement.className = 'status';
 mainElement.appendChild( statusElement );
 const logElement = document.createElement( 'div' );
+logElement.className = 'log';
 mainElement.appendChild( logElement );
+const puzzlesElement = document.createElement( 'ul' );
+puzzlesElement.className = 'puzzles';
+mainElement.appendChild( puzzlesElement );
+const actionsElement = document.createElement( 'ul' );
+actionsElement.className = 'actions';
+mainElement.appendChild( actionsElement );
 
 let puzzles = [
-	puzzleFromString( '080790000690000800005008090500006080000400300000070002050000010001300700800020004' ), // Weekly unsolvable (4-Aug-2018)
-	puzzleFromString( '000700000690000800005008090500006080000400300100070002050000010001300700008020004' ), // Weekly unsolvable (11-Aug-2018)
-	puzzleFromString( '050000080800296000600805003190000000024000360000000015400309001000651004010000070' ),
-	puzzleFromString( '600050400000007026300000098004205300000000000008403700260000004490800000001090003' ), // Quest
-	puzzleFromString( '940000208800642917710903050600000400080790002000000700120406879000000040008070120' ), // expert 2?
-	puzzleFromString( '000700001005400790010052600500000230100009450004007000690025000400690070050000002' ), // expert 1
-	puzzleFromString( '579120000000050089068379025900012000805647002700005000097003450004501297200090000' ), // ervaren 2 multiple solutions
-	puzzleFromString( '500360104060009000000057806940000000030610009702900560000280015000090070251700083' ) // ervaren 1 multiple solutions
+	{ name: 'Weekly unsolvable (4-Aug-2018)', puzzle: '080790000690000800005008090500006080000400300000070002050000010001300700800020004' },
+	{ name: 'Weekly unsolvable (11-Aug-2018)', puzzle: '000700000690000800005008090500006080000400300100070002050000010001300700008020004' },
+	{ name: 'Weekly unsolvable, I think', puzzle: '050000080800296000600805003190000000024000360000000015400309001000651004010000070' },
+	{ name: 'Quest', puzzle: '600050400000007026300000098004205300000000000008403700260000004490800000001090003' },
+	{ name: 'expert 2?', puzzle: '940000208800642917710903050600000400080790002000000700120406879000000040008070120' },
+	{ name: 'expert 1', puzzle: '000700001005400790010052600500000230100009450004007000690025000400690070050000002' },
+	{ name: 'ervaren 2 multiple solutions', puzzle: '579120000000050089068379025900012000805647002700005000097003450004501297200090000' },
+	{ name: 'ervaren 1 multiple solutions', puzzle: '500360104060009000000057806940000000030610009702900560000280015000090070251700083' }
 ];
 
 const cellValuesLookup = [];
@@ -31,11 +39,28 @@ for ( let i = 0; i < 512; i++ )
 	cellValuesLookup.push( entry );
 }
 
-let puzzle = puzzles[ 0 ];
+puzzles.forEach( puzzle => {
+	const puzzleElement = document.createElement( 'li' );
+	puzzleElement.onclick = () => load( puzzleFromString( puzzle.puzzle ) );
+	puzzleElement.innerText = puzzle.name;
+	puzzlesElement.appendChild( puzzleElement );
+} );
 
-main( puzzle );
+let loadedPuzzle = null;
 
-function main( puzzle )
+const solveElement = document.createElement( 'li' );
+solveElement.onclick = () => solve( loadedPuzzle );
+solveElement.innerText = 'Solve';
+actionsElement.appendChild( solveElement );
+
+function load( puzzle )
+{
+	logClear();
+	logGrid( puzzleToState( puzzle ), puzzle );
+	loadedPuzzle = puzzle;
+}
+
+function solve( puzzle )
 {
 	let state = puzzleToState( puzzle );
 
@@ -380,6 +405,11 @@ function status( text )
 	statusElement.innerText = text;
 }
 
+function logClear()
+{
+	logElement.innerHTML = '';
+}
+
 function log()
 {
 	[ ...arguments ].forEach( e => {
@@ -415,14 +445,14 @@ function createGrid( params )
 		{
 			let td = document.createElement( 'td' );
 			let index = 9 * i + j;
-			let e = only( state[ index ] );
-			const values = cellValues( state[ index ] );
+			let cell = only( state[ index ] );
+			let values = cellValues( state[ index ] );
 			let n = values.length;
 			if ( n === 1 )
 			{
-				if ( puzzle && ( puzzle[ index ] === e ) ) td.classList.add( 'given' );
-				if ( !e ) td.classList.add( 'error' );
-				if ( diffWith && ( only( diffWith[ index ] ) !== e ) )
+				if ( puzzle && ( puzzle[ index ] === cell ) ) td.classList.add( 'given' );
+				if ( !cell ) td.classList.add( 'error' );
+				if ( diffWith && ( only( diffWith[ index ] ) !== cell ) )
 				{
 					td.classList.add( 'diff' );
 				}
@@ -430,7 +460,7 @@ function createGrid( params )
 			}
 			else
 			{
-				if ( e || !n ) td.classList.add( 'error' );
+				if ( cell || !n ) td.classList.add( 'error' );
 				if ( n < 9 )
 				{
 					td.appendChild( createNotes( values ) );

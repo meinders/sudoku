@@ -110,3 +110,28 @@ div.tiny table.sudoku > tbody > tr > td
 {
 	font-size: 8px;
 }
+
+ul.puzzles
+{
+	list-style:none;
+	margin: 0;
+	padding: 0;
+	position: absolute;
+	left: 0;
+	top: 48px;
+	bottom: 0;
+	right: calc( 50% + 250px );
+}
+
+ul.puzzles li
+{
+	margin: .25em;
+	padding: .25em;
+	background: #fe8;
+}
+
+ul.puzzles li:hover
+{
+	background: black;
+	color: white;
+}
