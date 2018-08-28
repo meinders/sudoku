@@ -14,6 +14,23 @@ header
 	font-family: sans-serif;
 }
 
+button
+{
+	outline: none;
+	border: 1px solid #ccc;
+	background: #eee;
+	padding: .5em;
+	min-width: 2.5em;
+	text-align: center;
+}
+
+button.selected
+{
+	outline: none;
+	border: 1px solid #cca300;
+	background: #fc0;
+}
+
 main
 {
 	padding: 5px;
@@ -27,6 +44,7 @@ table.sudoku
 	line-height: 36px;
 	border-collapse: collapse;
 	margin: 10px;
+	user-select: none;
 }
 
 table.sudoku > tbody > tr:nth-of-type(3n)

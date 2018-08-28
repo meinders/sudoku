@@ -4,24 +4,7 @@ statusElement.className = 'status';
 mainElement.appendChild( statusElement );
 const logElement = document.createElement( 'div' );
 logElement.className = 'log';
-mainElement.appendChild( logElement );
-const puzzlesElement = document.createElement( 'ul' );
-puzzlesElement.className = 'puzzles';
-mainElement.appendChild( puzzlesElement );
-const actionsElement = document.createElement( 'ul' );
-actionsElement.className = 'actions';
-mainElement.appendChild( actionsElement );
-
-let puzzles = [
-	{ name: 'Weekly unsolvable (4-Aug-2018)', puzzle: '080790000690000800005008090500006080000400300000070002050000010001300700800020004' },
-	{ name: 'Weekly unsolvable (11-Aug-2018)', puzzle: '000700000690000800005008090500006080000400300100070002050000010001300700008020004' },
-	{ name: 'Weekly unsolvable, I think', puzzle: '050000080800296000600805003190000000024000360000000015400309001000651004010000070' },
-	{ name: 'Quest', puzzle: '600050400000007026300000098004205300000000000008403700260000004490800000001090003' },
-	{ name: 'expert 2?', puzzle: '940000208800642917710903050600000400080790002000000700120406879000000040008070120' },
-	{ name: 'expert 1', puzzle: '000700001005400790010052600500000230100009450004007000690025000400690070050000002' },
-	{ name: 'ervaren 2 multiple solutions', puzzle: '579120000000050089068379025900012000805647002700005000097003450004501297200090000' },
-	{ name: 'ervaren 1 multiple solutions', puzzle: '500360104060009000000057806940000000030610009702900560000280015000090070251700083' }
-];
+// mainElement.appendChild( logElement );
 
 const cellValuesLookup = [];
 for ( let i = 0; i < 512; i++ )
@@ -39,38 +22,208 @@ for ( let i = 0; i < 512; i++ )
 	cellValuesLookup.push( entry );
 }
 
-puzzles.forEach( puzzle => {
-	const puzzleElement = document.createElement( 'li' );
-	puzzleElement.onclick = () => load( puzzleFromString( puzzle.puzzle ) );
-	puzzleElement.innerText = puzzle.name;
-	puzzlesElement.appendChild( puzzleElement );
-} );
+let selectedNumber = 1;
 
-let loadedPuzzle = null;
-
-const solveElement = document.createElement( 'li' );
-solveElement.onclick = () => solve( loadedPuzzle );
-solveElement.innerText = 'Solve';
-actionsElement.appendChild( solveElement );
-
-function load( puzzle )
+for ( let i = 0; i <= 9; i++ )
 {
-	logClear();
-	logGrid( puzzleToState( puzzle ), puzzle );
-	loadedPuzzle = puzzle;
+	const numberButton = document.createElement( 'button' );
+	numberButton.innerText = i ? String( i ) : 'Erase';
+	numberButton.addEventListener( 'click', () => {
+		mainElement.querySelector( '.selected' ).className = '';
+		numberButton.className = 'selected';
+		selectedNumber = i;
+	} );
+	if ( i === selectedNumber )
+	{
+		numberButton.className = 'selected';
+	}
+	mainElement.appendChild( numberButton );
 }
 
-function solve( puzzle )
+class SudokuGrid
 {
-	let state = puzzleToState( puzzle );
-
-	let oldRemaining = puzzle.length;
-	let remaining;
-	for ( let i = 0; i < 20; i++ )
+	constructor()
 	{
+		const cells = [];
+
+		const table = document.createElement( 'table' );
+		table.className = 'sudoku';
+		const tbody = document.createElement( 'tbody' );
+		for ( let i = 0; i < 9; i++ )
+		{
+			const tr = document.createElement( 'tr' );
+			for ( let j = 0; j < 9; j++ )
+			{
+				const td = document.createElement( 'td' );
+				const index = 9 * i + j;
+				cells[ index ] = td;
+				td.addEventListener( 'click', event => this.handleCellClicked( index, event ) );
+
+				tr.appendChild( td );
+			}
+			tbody.appendChild( tr );
+		}
+		table.appendChild( tbody );
+		this.element = table;
+
+		this.cells = cells;
+		this.listener = null;
+		this.diffWith = null;
+	}
+
+	get puzzle()
+	{
+		return this._puzzle;
+	}
+
+	set puzzle( puzzle )
+	{
+		this._puzzle = puzzle;
+		this.state = puzzleToState( puzzle );
+		this.update();
+	}
+
+	handleCellClicked( index, event )
+	{
+		if ( this.listener )
+		{
+			this.listener( index, event );
+		}
+	}
+
+	update()
+	{
+		let { state, puzzle, diffWith } = this;
+
+		const checked = state.slice();
+		checkState( checked );
+
+		for ( let index = 0; index < 81; index++ )
+		{
+			let td = this.cells[ index ];
+			td.className = '';
+			td.innerText = '';
+
+			let cell = only( state[ index ] );
+			let values = cellValues( state[ index ] );
+			let n = values.length;
+
+			if ( n === 1 )
+			{
+				if ( puzzle && ( puzzle[ index ] === cell ) )
+				{
+					td.classList.add( 'given' );
+				}
+
+				if ( !cell || ( checked[ index ] !== state[ index ] ) )
+				{
+					td.classList.add( 'error' );
+				}
+
+				if ( diffWith && ( only( diffWith[ index ] ) !== cell ) )
+				{
+					td.classList.add( 'diff' );
+				}
+
+				td.appendChild( document.createTextNode( String( values[ 0 ] ) ) );
+			}
+			else
+			{
+				if ( cell || !n )
+				{
+					td.classList.add( 'error' );
+				}
+
+				if ( n < 9 )
+				{
+					td.appendChild( createNotes( values ) );
+				}
+			}
+		}
+	}
+}
+
+const mainGrid = new SudokuGrid();
+mainGrid.listener = function( index )
+{
+	if ( this.puzzle[ index ] === 0 )
+	{
+		this.state[ index ] = only( this.state[ index ] ) === selectedNumber ? all() : createSingle( selectedNumber );
+		this.update();
+	}
+};
+
+mainElement.appendChild( mainGrid.element );
+
+const solveElement = document.createElement( 'button' );
+solveElement.innerText = 'Solve';
+solveElement.onclick = () => solve( mainGrid );
+mainElement.appendChild( solveElement );
+
+let puzzles = [
+	{ name: 'Weekly unsolvable (25-Aug-2018)', puzzle: '001020030000400002200007800150060000090000060006300005010200000005010090000008701' },
+	{ name: 'Weekly unsolvable (4-Aug-2018)', puzzle: '080790000690000800005008090500006080000400300000070002050000010001300700800020004' },
+	{ name: 'Weekly unsolvable (11-Aug-2018)', puzzle: '000700000690000800005008090500006080000400300100070002050000010001300700008020004' },
+	{ name: 'Weekly unsolvable, I think', puzzle: '050000080800296000600805003190000000024000360000000015400309001000651004010000070' },
+	{ name: 'Quest', puzzle: '600050400000007026300000098004205300000000000008403700260000004490800000001090003' },
+	{ name: 'expert 2?', puzzle: '940000208800642917710903050600000400080790002000000700120406879000000040008070120' },
+	{ name: 'expert 1', puzzle: '000700001005400790010052600500000230100009450004007000690025000400690070050000002' },
+	{ name: 'ervaren 2 multiple solutions', puzzle: '579120000000050089068379025900012000805647002700005000097003450004501297200090000' },
+	{ name: 'ervaren 1 multiple solutions', puzzle: '500360104060009000000057806940000000030610009702900560000280015000090070251700083' }
+];
+
+mainGrid.puzzle = puzzleFromString( puzzles[ 4 ].puzzle );
+
+function devUI()
+{
+	const puzzlesElement = document.createElement( 'ul' );
+	puzzlesElement.className = 'puzzles';
+	mainElement.appendChild( puzzlesElement );
+	const actionsElement = document.createElement( 'ul' );
+	actionsElement.className = 'actions';
+	mainElement.appendChild( actionsElement );
+
+	puzzles.forEach( puzzle => {
+		const puzzleElement = document.createElement( 'li' );
+		puzzleElement.onclick = () => mainGrid.puzzle = puzzleFromString( puzzle.puzzle );
+		puzzleElement.innerText = puzzle.name;
+		puzzlesElement.appendChild( puzzleElement );
+	} );
+}
+
+function solve( sudokuGrid )
+{
+	const generator = solveImpl( sudokuGrid );
+
+	function nextStep()
+	{
+		const before = sudokuGrid.state.slice();
+		const next = generator.next();
+		sudokuGrid.diffWith = before;
+		sudokuGrid.update();
+
+		if ( !next.done )
+		{
+			setTimeout( nextStep, 1000 );
+		}
+	}
+
+	nextStep();
+}
+
+function* solveImpl( sudokuGrid, slowly = true )
+{
+	logClear();
+
+	let oldRemaining = sudokuGrid.puzzle.length;
+	let remaining;
+
+	for ( let i = 0; i < slowly ? 200 : 20; i++ )
+	{
+		const state = sudokuGrid.state;
 		remaining = state.length - countSolved( state );
 
-		logGrid( state, puzzle );
+		logClear();
 		log( remaining + ' remaining' );
 
 		if ( remaining === 0 )
@@ -78,82 +231,58 @@ function solve( puzzle )
 			break;
 		}
 
-		if ( remaining === oldRemaining )
+		if ( !slowly && ( remaining === oldRemaining ) )
 		{
 			break;
 		}
 
 		oldRemaining = remaining;
 
-		try
-		{
-			state = step( state );
-		}
-		catch ( e )
-		{
-			log( e.stack );
-		}
+		sudokuGrid.state = solveLogicStep( state, true );
+		yield;
 	}
 
 	let solutions;
 	if ( remaining )
 	{
+		log( 'Using A*...' );
+		const start = performance.now();
+
+		solutions = solveAStar( sudokuGrid.state, remaining, 100 );
+
+		for ( let next = solutions.next(); !next.done; next = solutions.next() )
 		{
-			log( 'Using A*...' );
-			solutions = solveAStar( state, remaining, 100 );
-		}
-	}
-	else
-	{
-		solutions = [ state ];
-	}
-
-
-	const start = performance.now();
-
-	function printNext( first )
-	{
-		const next = solutions.next();
-		let nextState = null;
-
-		if ( next.value )
-		{
-			if ( typeof next.value === 'object' )
+			if ( next.value )
 			{
-				nextState = next.value;
+				if ( typeof next.value === 'object' )
+				{
+					const end = performance.now();
 
-				const end = performance.now();
+					sudokuGrid.state = next.value;
+					// TODO: sudokuGrid.diffWith = first;
+					yield;
 
-				const grid = createGrid( { state: nextState, puzzle: puzzle, diffWith: first } );
+					/*
+					const tinyGridLabel = document.createElement( 'label' );
+					tinyGridLabel.appendChild( document.createTextNode( ( Math.round( end - start ) / 1000 ) + ' seconds' ) );
 
-				const tinyGridLabel = document.createElement( 'label' );
-				tinyGridLabel.appendChild( document.createTextNode( ( Math.round( end - start ) / 1000 ) + ' seconds' ) );
+					const tinyGridWrapper = document.createElement( 'div' );
+					tinyGridWrapper.className = 'tiny';
+					tinyGridWrapper.appendChild( grid );
+					tinyGridWrapper.appendChild( tinyGridLabel );
+					logElement.appendChild( tinyGridWrapper );
 
-				const tinyGridWrapper = document.createElement( 'div' );
-				tinyGridWrapper.className = 'tiny';
-				tinyGridWrapper.appendChild( grid );
-				tinyGridWrapper.appendChild( tinyGridLabel );
-				logElement.appendChild( tinyGridWrapper );
-
-				logPuzzleString( stateToString( next.value ) );
-			}
-			else
-			{
-				status( String( next.value ) );
+					logPuzzleString( stateToString( next.value ) );
+					*/
+				}
+				else
+				{
+					status( String( next.value ) );
+				}
 			}
 		}
-
-		if ( next.done )
-		{
-			log( 'Done' );
-		}
-		else
-		{
-			setTimeout( () => printNext( first || nextState ), 10 );
-		}
+		log( 'Done' );
 	}
-
-	printNext();
 }
 
 function* solveAStar( start )
@@ -196,7 +325,7 @@ function* solveAStar( start )
 						do
 						{
 							before = after;
-							neighbour = step( neighbour );
+							neighbour = solveLogicStep( neighbour );
 							neighbour.string = stateToString( neighbour );
 
 							if ( closedSet.has( neighbour.string ) )
@@ -250,7 +379,7 @@ function* solveAStar( start )
 	}
 }
 
-function step( input )
+function solveLogicStep( input, slowly = false )
 {
 	let state = input.slice();
 
@@ -300,7 +429,6 @@ function step( input )
 						{
 							//log(' - ', state[x+9*j])
 							state[ x + 9 * j ] = removeAll( copyCell( state[ x + 9 * j ] ), row );
-							// checkCell( state, x, j );
 						}
 					}
 				}
@@ -313,7 +441,6 @@ function step( input )
 						if ( unsolved( state[ i + 9 * y ] ) && ( y < b || y >= b + 3 ) )
 						{
 							state[ i + 9 * y ] = removeAll( copyCell( state[ i + 9 * y ] ), col );
-							// checkCell( state, i, y );
 						}
 					}
 				}
@@ -322,25 +449,32 @@ function step( input )
 				if ( single( cell ) )
 				{
 					s = cell;
-					// checkCell( state, i, j );
 				}
 
 				state[ i + 9 * j ] = s;
-				// checkCell( state, i, j );
+
+				if ( slowly && single( s ) )
+				{
+					console.info( 'solve', i, j );
+					return state;
+				}
 			}
 		}
 	}
 
-	checkState( state );
+	// checkState( state );
 	return state;
 }
 
-function checkCell( state, i, j )
+function checkCell( state, index )
 {
+	const i = index % 9;
+	const j = ( index - i ) / 9;
+
 	const a = i - i % 3;
 	const b = j - j % 3;
 
-	let s = copyCell( state[ i + 9 * j ] );
+	let s = copyCell( state[ index ] );
 
 	for ( let k = 0; k < 9; k++ )
 	{
@@ -362,12 +496,14 @@ function checkCell( state, i, j )
 		}
 	}
 
-	state[ i + 9 * j ] = s;
+	return s;
 }
 
 function checkState( state )
 {
-	state.forEach( ( e, i ) => checkCell( state, i % 9, ( i - i % 9 ) / 9 ) );
+	const result = state.slice();
+	state.forEach( ( e, i ) => result[ i ] = checkCell( state, i ) );
+	state.forEach( ( e, i ) => state[ i ] = result[ i ] );
 }
 
 function countSolved( state )
@@ -435,6 +571,9 @@ function createGrid( params )
 {
 	let { state, puzzle, diffWith, listener } = params;
 
+	const checked = state.slice();
+	checkState( checked );
+
 	let table = document.createElement( 'table' );
 	table.className = 'sudoku';
 	let tbody = document.createElement( 'tbody' );
@@ -450,8 +589,14 @@ function createGrid( params )
 			let n = values.length;
 			if ( n === 1 )
 			{
-				if ( puzzle && ( puzzle[ index ] === cell ) ) td.classList.add( 'given' );
-				if ( !cell ) td.classList.add( 'error' );
+				if ( puzzle && ( puzzle[ index ] === cell ) )
+				{
+					td.classList.add( 'given' );
+				}
+				if ( !cell || ( checked[ index ] !== state[ index ] ) )
+				{
+					td.classList.add( 'error' );
+				}
 				if ( diffWith && ( only( diffWith[ index ] ) !== cell ) )
 				{
 					td.classList.add( 'diff' );
