@@ -69,6 +69,7 @@ class SudokuGrid
 		this.cells = cells;
 		this.listener = null;
 		this.diffWith = null;
+		this.history = [];
 	}
 
 	get puzzle()
@@ -81,6 +82,36 @@ class SudokuGrid
 		this._puzzle = puzzle;
 		this.state = puzzleToState( puzzle );
 		this.update();
+	}
+
+	get state()
+	{
+		return this._state;
+	}
+
+	set state( state )
+	{
+		if ( this.state )
+		{
+			this.history.push( { puzzle: this.puzzle, state: this.state } );
+		}
+		this.replaceState( state );
+	}
+
+	replaceState( state )
+	{
+		this._state = state;
+	}
+
+	undo()
+	{
+		const previous = this.history.pop();
+		if ( previous )
+		{
+			this._puzzle = previous.puzzle;
+			this._state = previous.state;
+			this.diffWith = null;
+		}
 	}
 
 	handleCellClicked( index, event )
@@ -155,10 +186,23 @@ mainGrid.listener = function( index )
 
 mainElement.appendChild( mainGrid.element );
 
-const solveElement = document.createElement( 'button' );
-solveElement.innerText = 'Solve';
-solveElement.onclick = () => solve( mainGrid );
-mainElement.appendChild( solveElement );
+const solveButton = document.createElement( 'button' );
+solveButton.innerText = 'Solve';
+solveButton.onclick = () => solve( mainGrid );
+mainElement.appendChild( solveButton );
+
+const stepButton = document.createElement( 'button' );
+stepButton.innerText = 'Step';
+stepButton.onclick = () => solveStep( mainGrid );
+mainElement.appendChild( stepButton );
+
+const undoButton = document.createElement( 'button' );
+undoButton.innerText = 'Undo';
+undoButton.onclick = () => {
+	mainGrid.undo();
+	mainGrid.update();
+};
+mainElement.appendChild( undoButton );
 
 let puzzles = [
 	{ name: 'Weekly unsolvable (25-Aug-2018)', puzzle: '001020030000400002200007800150060000090000060006300005010200000005010090000008701' },
@@ -204,11 +248,19 @@ function solve( sudokuGrid )
 
 		if ( !next.done )
 		{
-			setTimeout( nextStep, 1000 );
+			setTimeout( nextStep, 100 );
 		}
 	}
 
 	nextStep();
+}
+
+function solveStep( sudokuGrid )
+{
+	const before = sudokuGrid.state;
+	sudokuGrid.diffWith = before;
+	sudokuGrid.state = solveLogicStep( before, true );
+	sudokuGrid.update();
 }
 
 function* solveImpl( sudokuGrid, slowly = true )
@@ -455,7 +507,6 @@ function solveLogicStep( input, slowly = false )
 
 				if ( slowly && single( s ) )
 				{
-					console.info( 'solve', i, j );
 					return state;
 				}
 			}
