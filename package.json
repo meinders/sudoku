@@ -7,6 +7,6 @@
   "author": "Gerrit Meinders <meinders1337@gmail.com>",
   "license": "GPLv3",
   "devDependencies": {
-    "eslint": "^5.2.0"
+    "eslint": "^8.15.0"
   }
 }
